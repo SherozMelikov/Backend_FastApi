@@ -119,3 +119,8 @@ def create_tasks(
 
        
    )
+
+
+@router.get("/")
+def  read_root():
+    return {"message": "Task Manager API is running"}
