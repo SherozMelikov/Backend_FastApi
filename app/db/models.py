@@ -5,7 +5,7 @@ from sqlalchemy import Column, Integer, String
 
 from app.db.database import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey , String , UniqueConstraint
 
 class User(Base):
 
@@ -16,8 +16,7 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     
     tasks: Mapped[List["Task"]] = relationship(back_populates="user")
- 
-
+    categories: Mapped[List["Category"]] = relationship(back_populates="user")
 class Task(Base):
     __tablename__="tasks"
 
@@ -29,3 +28,26 @@ class Task(Base):
     
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship(back_populates="tasks")
+
+    category_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("categories.id"),
+        nullable=True
+    )
+
+    category: Mapped[Optional["Category"]] = relationship(back_populates="tasks")
+
+
+class Category(Base):
+    __tablename__ = "categories"
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "name", name="uq_user_category_name"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user: Mapped["User"] = relationship(back_populates="categories")
+
+    tasks: Mapped[List["Task"]] = relationship(back_populates="category")
