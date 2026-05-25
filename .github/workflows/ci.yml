@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      SECRET_KEY: test-secret-key
+      SECRET_KEY: super-secret-test-key-for-ci-workflow-12345
       DATABASE_URL: sqlite:///./test.db
 
     steps:
