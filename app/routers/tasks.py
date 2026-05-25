@@ -23,12 +23,13 @@ from app.services import task_services
 
 
 
-router = APIRouter()
+router = APIRouter(prefix="/tasks", tags=["tasks"])
+
 
 
 #  GET /tasks/ 
 # Retrives  all tasks from the db
-@router.get("/tasks/" , tags=["tasks"] , response_model=list[TaskResponse])
+@router.get("/" , tags=["tasks"] , response_model=list[TaskResponse])
 def read_tasks (
     current_user: Annotated[User, Depends(get_current_user)],
     db : Session = Depends(get_db),
@@ -45,7 +46,7 @@ def read_tasks (
 
 # Get /task/{task_id}
 # Teturns task by it is id 
-@router.get("/tasks/{task_id}", tags=["tasks"],response_model=TaskResponse)
+@router.get("/{task_id}", tags=["tasks"],response_model=TaskResponse)
 def read_task_by_id(
     task_id : int, 
     current_user : Annotated[User, Depends(get_current_user)],
@@ -64,7 +65,7 @@ def read_task_by_id(
 
 # PUT /tasks/{task_id}
 #  Finds  an existing  task by ID , update its fields, saves changes , and returns the updated task.
-@router.put("/tasks/{task_id}", tags=["tasks"], response_model=TaskResponse)
+@router.put("/{task_id}", tags=["tasks"], response_model=TaskResponse)
 def update_task(
     task_id: int,
     task: TaskUpdate,
@@ -84,7 +85,7 @@ def update_task(
 # Delete /tasks {task_id}
 # Finds a task by ID , deletes  it if  it exists  , and returns 200 No content!
 
-@router.delete("/tasks/{task_id}",tags=["tasks"], status_code=200)
+@router.delete("/{task_id}",tags=["tasks"], status_code=200)
 def delete_task_by_id(
     task_id : int , 
     user : Annotated [ User , Depends (get_current_user)],
@@ -103,7 +104,7 @@ def delete_task_by_id(
 
 # Post /tasks/ 
 # Create a task  and saves to db !
-@router.post("/tasks/",response_model=TaskResponse,tags=["tasks"])
+@router.post("/",response_model=TaskResponse,tags=["tasks"])
 def create_tasks(
     task : TaskCreate,
     user : Annotated[User, Depends(get_current_user)],
@@ -120,7 +121,3 @@ def create_tasks(
        
    )
 
-
-@router.get("/")
-def  read_root():
-    return {"message": "Task Manager API is running"}
