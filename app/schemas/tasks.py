@@ -10,6 +10,7 @@ class TaskCreate(BaseModel):
     )
     description : str | None = Field(default=None, max_length=500)
     is_complete : bool = False
+    category_id : int | None = Field(default=None, gt=0)
 
 class TaskUpdate(BaseModel):
     title : str = Field(
@@ -18,7 +19,7 @@ class TaskUpdate(BaseModel):
     ) 
     description : str | None = Field(default=None, max_length=500)
     is_complete : bool = False
-
+    category_id: int | None = Field(default=None, gt=0)
 
 class TaskResponse(BaseModel):
     id : int
@@ -27,6 +28,6 @@ class TaskResponse(BaseModel):
     is_complete: bool
     created_at : datetime 
     user_id : int 
-
+    category_id: int | None = None
     model_config = ConfigDict(from_attributes=True)
 
