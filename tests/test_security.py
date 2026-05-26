@@ -28,7 +28,7 @@ def test_verify_password_with_wrong_password():
 
 
 
-def  test_create_and_decode_access_token():
+def test_create_and_decode_access_token():
     token = create_access_token({"sub": "testuser"})
     payload = decode_access_token(token)
 

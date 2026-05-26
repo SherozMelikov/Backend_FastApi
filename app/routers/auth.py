@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db 
 from app.schemas.token import TokenResponse
 
-router = APIRouter(tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 

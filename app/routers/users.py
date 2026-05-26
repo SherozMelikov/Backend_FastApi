@@ -13,7 +13,7 @@ from app.dependencies.auth  import get_current_user
 from app.schemas.token import TokenResponse
 from app.schemas.users  import UserCreate, UserLogin, UserResponse
 
-router = APIRouter()
+router = APIRouter(prefix="/users", tags=["users"])
 
 
 from app.services import auth_service, user_services
@@ -21,7 +21,7 @@ from app.services import auth_service, user_services
 
 
 
-@router.get("/users/current", tags=["users"], response_model=UserResponse)
+@router.get("/current", tags=["users"], response_model=UserResponse)
 async  def get_users_current(current_user : Annotated[User, Depends(get_current_user)]):
     return current_user
 
@@ -37,7 +37,7 @@ async  def get_users_current(current_user : Annotated[User, Depends(get_current_
 # Create a new user in the database
 # UserCreate   validates  the incomming request  body
 # UserResponse controls what data is returned  to the client 
-@router.post("/users/",response_model=UserResponse,tags=["users"])
+@router.post("/",response_model=UserResponse,tags=["users"])
 def post_users(user: UserCreate, db:  Session = Depends(get_db)):
     return user_services.register_user(db=db,user=user)
 
