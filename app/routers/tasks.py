@@ -29,7 +29,7 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 #  GET /tasks/ 
 # Retrives  all tasks from the db
-@router.get("/" , tags=["tasks"] , response_model=list[TaskResponse])
+@router.get("/" , response_model=list[TaskResponse])
 def read_tasks (
     current_user: Annotated[User, Depends(get_current_user)],
     db : Session = Depends(get_db),

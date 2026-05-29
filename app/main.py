@@ -1765,7 +1765,8 @@ from fastapi import FastAPI, Depends
 from fastapi.routing import APIRoute
 
 from app.internal import admin
-from app.routers import auth, items, tasks , users
+from app.routers import auth, items, tasks , users , categories
+
 
 
 
@@ -1790,6 +1791,7 @@ app.include_router(users.router)
 app.include_router(items.router)
 app.include_router(tasks.router)
 app.include_router(auth.router)
+app.include_router(categories.router)
 app.include_router(
     admin.router,
     prefix="/admin",
