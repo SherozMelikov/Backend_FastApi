@@ -199,9 +199,336 @@ def test_get_categories_for_authenticvated_user(client):
 
     assert "Study" in category_names
     assert "Work" in category_names
-        
 
 
+# TC-CAT-05--Authenticated user can get category by id     
+# Expected: 200 
+#         
+def test_get_category_by_id(client):
+    # Declared glocal variable to avoid repetition
+    username = "category_user_4"
+    email = "category_user_2312q@gmail.com"
+    password = "Testing_1234@"
+
+    # Mitigated user registration using global variable
+    register_response = client.post(
+        "/users/",
+        json={
+            "username": username,
+            "email": email,
+            "password": password,
+
+        },
+    )
+    # Checked wheather it returned 200 ok
+    assert register_response.status_code == 200
+
+    # Mitigated user authentication using global variable
+    login_response = client.post(
+        "/auth/login",
+        data={
+            "username": username,
+            "password": password,
+        },
+
+    )
+    # Checked is it correct or not 
+    assert login_response.status_code == 200
+
+    # Extracted token from json body response 
+    token = login_response.json()["access_token"]
+
+    # Token added  in headers 
+    headers = {
+        "Authorization": f"Bearer {token}",
+    }
+
+    # Header with authenticated header  using  in category_creeate 
+    category_create = client.post(
+        "/categories/",
+        headers=headers,
+        json={"name": "Study"},
+
+    )
+
+    # Make sure that it is returned 201
+    assert category_create.status_code == 201
+
+    # Extracter category id from json through parsing json arrray into python dictionary
+    created_category_id = category_create.json()["id"]
+
+
+    # Extracted category id is being used in get_category plus   with headers 
+    get_category_response = client.get(
+        f"/categories/{created_category_id}",
+        headers=headers
+
+    )
+    # Checked that it returned  200 ok
+    assert get_category_response.status_code == 200
+    # Saved returned json body into  a varible that is converted python readable dictionary
+    category_data = get_category_response.json()
+
+    # Checked  that extracted category id is == to the original returned id 
+    assert category_data["id"] == created_category_id
+
+    # Checked that  name matches with the returned actual category name 
+    assert category_data["name"] == "Study"
+
+
+# TC-CAT-06-- Unknown category returns 404
+# Expected : 404 Not Found 
+
+def test_get_category_with_unknown_id(client):
+    username = "category_user_6"
+    email = "category_user_2312@gmail.com"
+    password = "Testing_1234@"
+
+    register_response = client.post(
+        "/users/",
+        json={
+            "username": username,
+            "email": email,
+            "password": password,
+        },
+    )
+    assert register_response.status_code == 200
+
+    login_response = client.post(
+        "/auth/login",
+        data={
+            "username": username,
+            "password": password,
+        }
+    )
+
+    assert login_response.status_code == 200
+
+
+
+    token = login_response.json()["access_token"]
+
+    header = {
+        "Authorization": f"Bearer {token}",
+    }
+
+    unknown_category_id = 9999999
+
+    get_category_response = client.get(
+        f"/categories/{unknown_category_id}",
+        headers=header
+    )
+   
+    assert get_category_response.status_code == 404
+    data =  get_category_response.json()
+    assert "detail" in data
+    assert data["detail"] == "Category not found"
+
+
+
+
+#TC-CAT-7 -- Authenticated user can update own category
+#Expected : 200 OK
+
+def test_update_category(client):
+    username = "category_user_7"
+    email = "category_user_231@gmail.com"
+    password = "Testing_1234@"
+
+    register_response = client.post(
+        "/users/",
+        json={
+            "username": username,
+            "email": email,
+            "password": password,
+        },
+    )
+    assert register_response.status_code == 200
+
+
+
+    login_response = client.post(
+        "/auth/login",
+        data={
+            "username": username,
+            "password": password,
+        },
+
+    )
+    assert login_response.status_code == 200
+
+    token = login_response.json()["access_token"]
+
+    header = {
+        "Authorization": f"Bearer {token}"
+    }
+
+    category_create_request = client.post(
+        "/categories/",
+        headers=header,
+        json={
+            "name": "Study",
+        }
+    )
+
+    assert  category_create_request.status_code == 201
+
+    category_id = category_create_request.json()["id"]
+
+    update_category_request = client.put(
+        f"/categories/{category_id}",
+        headers=header,
+        json={"name": "University"}
+    )
+
+    assert update_category_request.status_code == 200
+
+    updated_data = update_category_request.json()
+
+    assert updated_data["id"] == category_id
+    assert updated_data["name"] == "University"
+
+
+#TC-CAT-08 -- Updating to duplicate name rejected 
+#Expected : 409 Conflict 
+
+
+def test_update_category_rejected(client):
+    username = "category_user_8"
+    email = "category_user_231@gmail.com"
+    password = "Testing_2312@"
+
+    register_response = client.post(
+        "/users/",
+        json={
+            "username": username,
+            "email": email,
+            "password": password,
+        },
+    )
+    assert register_response.status_code == 200
+
+
+
+    login_response = client.post(
+        "/auth/login",
+        data={
+            "username": username,
+            "password": password,
+        },
+
+    )
+    assert login_response.status_code == 200
+
+    token = login_response.json()["access_token"]
+
+    header = {
+        "Authorization": f"Bearer {token}"
+    }
+
+    study_category_create_request = client.post(
+        "/categories/",
+        headers=header,
+        json={
+            "name": "Study",
+        }
+    )
+    assert study_category_create_request.status_code == 201
+
+    work_category_create_request = client.post(
+        "/categories/",
+        headers=header,
+        json = {
+            "name": "Work",
+        }
+    )
+    assert work_category_create_request.status_code == 201 
+
+    work_id = work_category_create_request.json()["id"]
+
+    update_work_request = client.put(
+        f"/categories/{work_id}",
+        headers= header,
+        json = {
+            "name": "Study",
+        }
+    )
+    assert update_work_request.status_code == 409
+
+    updated_data = update_work_request.json()
+
+    assert "detail" in updated_data
+    assert updated_data["detail"] == "Category already exists"
+    
+
+
+#TC-CAT-09 -- Authenticated user can delete own category
+#Expected: 204 No Content
+def test_delete_category(client):
+    username = "category_user_9"
+    email = "category_user_231da@gmail.com"
+    password = "Testing_2312@"
+
+    register_response = client.post(
+        "/users/",
+        json={
+            "username": username,
+            "email": email,
+            "password": password,
+        },
+    )
+    assert register_response.status_code == 200
+
+
+
+    login_response = client.post(
+        "/auth/login",
+        data={
+            "username": username,
+            "password": password,
+        },
+
+    )
+    assert login_response.status_code == 200
+
+    token = login_response.json()["access_token"]
+
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }
+
+    study_category_create_request = client.post(
+        "/categories/",
+        headers=headers,
+        json={
+            "name": "Study",
+        }
+    )
+    assert study_category_create_request.status_code == 201
+
+    category_id = study_category_create_request.json()["id"]
+
+    delete_study_request = client.delete(
+        f"/categories/{category_id}",
+        headers=headers
+    )
+    assert delete_study_request.status_code == 204 
+
+
+    #TC-CAT -- Deleted categopry no londer exists
+    #Expected : 404
+    
+    get_deleted_study_cat = client.get(
+        f"/categories/{category_id}",
+        headers=headers
+    )
+    assert get_deleted_study_cat.status_code == 404
+
+
+
+
+
+ 
 
 
     
