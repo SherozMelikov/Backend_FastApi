@@ -25,7 +25,8 @@ class Task(Base):
     description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     is_complete: Mapped[bool] = mapped_column(default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, nullable=False)
-    
+    due_date : Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    completed_at :  Mapped[Optional[datetime]]  = mapped_column(default=None, nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship(back_populates="tasks")
 
