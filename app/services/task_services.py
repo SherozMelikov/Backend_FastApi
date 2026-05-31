@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Session
 from app.db.models import Task
 from fastapi.exceptions import HTTPException
@@ -21,29 +23,36 @@ def get_task_for_user(db: Session , user_id, task_id):
     return task
 
 def put_task(
-        db : Session ,
-        user_id: int ,
-        task_id : int,
-        task : TaskUpdate
+    db: Session,
+    user_id: int,
+    task_id: int,
+    task: TaskUpdate,
 ):
     found_task = db.query(Task).filter(
         Task.id == task_id,
-        Task.user_id == user_id
+        Task.user_id == user_id,
     ).first()
 
     if found_task is None:
-        raise HTTPException(status_code=404, detail= "Task not found")
+        raise HTTPException(status_code=404, detail="Task not found")
 
-    found_task.title = task.title,
-    found_task.description = task.description,
-    found_task.is_complete = task.is_complete
+    update_data = task.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        if field == "is_complete":
+            found_task.is_complete = value
+
+            if value is True:
+                found_task.completed_at = datetime.utcnow()
+            else:
+                found_task.completed_at = None
+        else:
+            setattr(found_task, field, value)
 
     db.commit()
     db.refresh(found_task)
 
     return found_task
-
-
 
 def delete_task(db, user_id , task_id):
     found_task = db.query(Task).filter(
