@@ -1,7 +1,8 @@
-from datetime import datetime
+from datetime import datetime, time, timedelta, timezone
+
 
 from sqlalchemy.orm import Session
-from app.db.models import Task
+from app.db.models import Category, Task
 from fastapi.exceptions import HTTPException
 
 from app.schemas.tasks import TaskCreate, TaskUpdate
@@ -70,11 +71,27 @@ def delete_task(db, user_id , task_id):
 
 
 
-def post_task(db , user_id ,task : TaskCreate ):
+def post_task(db , user_id ,task : TaskCreate):
+
+
+    # While creating a task it will prevent a db crash and handle task existance  if task does not exist it will return status_code =  404 instead of 500
+    if task.category_id is not None:
+        found_category = db.query(Category).filter(
+            Category.id == task.category_id,
+            Category.user_id == user_id 
+        ).first()
+
+        if not found_category:
+            raise HTTPException(status_code=404,detail="Category not found")
+
+
+
     new_task = Task(
         title = task.title,
         description = task.description,
         is_complete = task.is_complete,
+        category_id = task.category_id,
+        due_date = task.due_date,
         user_id = user_id
 
     )
@@ -82,4 +99,35 @@ def post_task(db , user_id ,task : TaskCreate ):
     db.commit()
     db.refresh(new_task)
     return new_task
+
+
+def get_tasks_due_today(db : Session, user_id):
+    
+
+    # Get current datetime with timezone 
+    now = datetime.now(timezone.utc)
+
+    # Sets start time for today
+    start_today = datetime.combine(
+        now.date(),
+        time.min,
+        tzinfo=timezone.utc
+    )
+
+    # Sets start time for tomorrow 
+    start_tomorrow = start_today + timedelta(days=1)
+
+
+
+    tasks = db.query(Task).filter(
+        Task.user_id == user_id,
+        Task.is_complete == False,
+        Task.due_date.isnot(None),
+        Task.due_date >= start_today,
+        Task.due_date < start_tomorrow
+
+    ).order_by(Task.due_date.asc()) # orders by due_data ascending order 
+    
+    return tasks.all()
+
 
