@@ -21,6 +21,7 @@ def create_users(db: Session, user: UserCreate):
         username=user.username,
         email=user.email,
         hashed_password=hashed_password,
+        timezone="UTC",
     )
 
     db.add(new_user)
@@ -28,8 +29,6 @@ def create_users(db: Session, user: UserCreate):
     db.refresh(new_user)
 
     return new_user
-
-
 def get_user_by_id(db: Session, user_id: int):
     user_by_id = db.query(User).filter(User.id == user_id).first()
     return user_by_id
