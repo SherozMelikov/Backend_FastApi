@@ -6,12 +6,8 @@ from sqlalchemy.orm import Session
 #Import database dependency that provides  a DB Session 
 from app.db.database import get_db
 
-#Import  HTTPException to handle  error  with logs 
-
-from fastapi import HTTPException
-
 #Import SQLAlchemy  model / table
-from app.db.models import Task, User
+from app.db.models import  User
 
 # Import  FastAPI router and dependency Helper 
 from fastapi  import APIRouter  , Depends
@@ -41,12 +37,50 @@ def read_tasks (
         user_id=user_id
     )
     return tasks
-       
 
+
+
+# GET /tasks / today
+@router.get("/today", response_model=list[TaskResponse])
+def task_today(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+):
+    return task_services.get_tasks_due_today(
+        db=db,
+        user_id=current_user.id,
+        user_timezone=current_user.timezone
+    )
+
+# GET /tasks/upcoming
+@router.get("/upcoming", response_model=list[TaskResponse])
+def task_upcoming(
+    current_user : Annotated[User, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+
+):
+     return task_services.get_upcoming_tasks(
+         db=db,
+         user_id=current_user.id,
+
+     )
+
+# GET /tasks/overdue
+
+@router.get("/overdue", response_model = list[TaskResponse])
+def task_overdue(
+    current_user : Annotated[User, Depends(get_current_user)],
+    db : Session = Depends (get_db)
+):
+    return task_services.get_overdue_tasks(
+        db=db,
+        user_id=current_user.id,
+
+    )
 
 # Get /task/{task_id}
 # Teturns task by it is id 
-@router.get("/{task_id}", tags=["tasks"],response_model=TaskResponse)
+@router.get("/{task_id}",response_model=TaskResponse)
 def read_task_by_id(
     task_id : int, 
     current_user : Annotated[User, Depends(get_current_user)],
@@ -65,7 +99,7 @@ def read_task_by_id(
 
 # PUT /tasks/{task_id}
 #  Finds  an existing  task by ID , update its fields, saves changes , and returns the updated task.
-@router.put("/{task_id}", tags=["tasks"], response_model=TaskResponse)
+@router.put("/{task_id}", response_model=TaskResponse)
 def update_task(
     task_id: int,
     task: TaskUpdate,
@@ -85,7 +119,7 @@ def update_task(
 # Delete /tasks {task_id}
 # Finds a task by ID , deletes  it if  it exists  , and returns 200 No content!
 
-@router.delete("/{task_id}",tags=["tasks"], status_code=200)
+@router.delete("/{task_id}", status_code=200)
 def delete_task_by_id(
     task_id : int , 
     user : Annotated [ User , Depends (get_current_user)],
@@ -104,7 +138,7 @@ def delete_task_by_id(
 
 # Post /tasks/ 
 # Create a task  and saves to db !
-@router.post("/",response_model=TaskResponse,tags=["tasks"])
+@router.post("/",response_model=TaskResponse,)
 def create_tasks(
     task : TaskCreate,
     user : Annotated[User, Depends(get_current_user)],
@@ -122,7 +156,4 @@ def create_tasks(
    )
 
 
-# GET /tasks/today
-
-# @router.get("/today")
 

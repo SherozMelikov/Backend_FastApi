@@ -1,11 +1,10 @@
 from datetime import datetime
 from typing import List, Optional
-
-from sqlalchemy import Column, Integer, String
-
+from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint
 from app.db.database import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey , String , UniqueConstraint
+
+from app.utils.datetime_utils import utc_now
 
 class User(Base):
 
@@ -14,7 +13,11 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(50),nullable=False, unique=True)
     email: Mapped[str] = mapped_column(String(50),nullable=False,unique=True) 
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
-    
+    timezone: Mapped[str] = mapped_column(
+        String(100),
+        default="UTC",
+        nullable=False
+    )
     tasks: Mapped[List["Task"]] = relationship(back_populates="user")
     categories: Mapped[List["Category"]] = relationship(back_populates="user")
 class Task(Base):
@@ -24,9 +27,22 @@ class Task(Base):
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     is_complete: Mapped[bool] = mapped_column(default=False, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, nullable=False)
-    due_date : Mapped[Optional[datetime]] = mapped_column(nullable=True)
-    completed_at :  Mapped[Optional[datetime]]  = mapped_column(default=None, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False
+    )
+
+    due_date: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
+    completed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        default=None,
+        nullable=True
+    )    
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship(back_populates="tasks")
 
@@ -34,7 +50,19 @@ class Task(Base):
         ForeignKey("categories.id"),
         nullable=True
     )
+    priority: Mapped[str] = mapped_column(
+        String(20),
+        default="medium",
+        server_default="medium",
+        nullable=False
+    )
 
+    impact_level: Mapped[str] = mapped_column(
+        String(20),
+        default="medium",
+        server_default="medium",
+        nullable=False
+    )
     category: Mapped[Optional["Category"]] = relationship(back_populates="tasks")
 
 

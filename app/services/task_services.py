@@ -1,4 +1,5 @@
 from datetime import datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 
 from sqlalchemy.orm import Session
@@ -6,6 +7,7 @@ from app.db.models import Category, Task
 from fastapi.exceptions import HTTPException
 
 from app.schemas.tasks import TaskCreate, TaskUpdate
+from app.utils.datetime_utils import utc_now
 
 def get_tasks_for_user(db : Session , user_id):
     tasks = db.query(Task).filter(Task.user_id==user_id).all()
@@ -44,7 +46,7 @@ def put_task(
             found_task.is_complete = value
 
             if value is True:
-                found_task.completed_at = datetime.utcnow()
+                found_task.completed_at = utc_now()
             else:
                 found_task.completed_at = None
         else:
@@ -73,8 +75,9 @@ def delete_task(db, user_id , task_id):
 
 def post_task(db , user_id ,task : TaskCreate):
 
+    # If category_id is provided, check that the category exists
+    # and belongs to the current user before creating the task.
 
-    # While creating a task it will prevent a db crash and handle task existance  if task does not exist it will return status_code =  404 instead of 500
     if task.category_id is not None:
         found_category = db.query(Category).filter(
             Category.id == task.category_id,
@@ -92,7 +95,9 @@ def post_task(db , user_id ,task : TaskCreate):
         is_complete = task.is_complete,
         category_id = task.category_id,
         due_date = task.due_date,
-        user_id = user_id
+        user_id = user_id,
+        priority = task.priority,
+        impact_level = task.impact_level
 
     )
     db.add(new_task)
@@ -100,34 +105,66 @@ def post_task(db , user_id ,task : TaskCreate):
     db.refresh(new_task)
     return new_task
 
-
-def get_tasks_due_today(db : Session, user_id):
+def get_tasks_due_today(db: Session, user_id: int, user_timezone: str):
     
+    
+    try:
+        user_tz = ZoneInfo(user_timezone)
+    except Exception:
+        user_tz = timezone.utc
 
-    # Get current datetime with timezone 
-    now = datetime.now(timezone.utc)
+    now_user_time = utc_now().astimezone(user_tz)
 
-    # Sets start time for today
-    start_today = datetime.combine(
-        now.date(),
+    start_today_user_time = datetime.combine(
+        now_user_time.date(),
         time.min,
-        tzinfo=timezone.utc
+        tzinfo=user_tz
     )
 
-    # Sets start time for tomorrow 
-    start_tomorrow = start_today + timedelta(days=1)
+    start_tomorrow_user_time = start_today_user_time + timedelta(days=1)
 
-
+    start_today_utc = start_today_user_time.astimezone(timezone.utc)
+    start_tomorrow_utc = start_tomorrow_user_time.astimezone(timezone.utc)
 
     tasks = db.query(Task).filter(
         Task.user_id == user_id,
         Task.is_complete == False,
         Task.due_date.isnot(None),
-        Task.due_date >= start_today,
-        Task.due_date < start_tomorrow
+        Task.due_date >= start_today_utc,
+        Task.due_date < start_tomorrow_utc
+    ).order_by(Task.due_date.asc()).all()
 
-    ).order_by(Task.due_date.asc()) # orders by due_data ascending order 
-    
-    return tasks.all()
+    return tasks
 
 
+def get_upcoming_tasks(db : Session, user_id: int ):
+
+    # Gets the current UTC datetime
+    now = utc_now()
+
+    # Find incomplete tasks that belong to the user
+    # and have a future due_date.
+    tasks = db.query(Task).filter(
+        Task.user_id ==  user_id,
+        Task.is_complete  == False,
+        Task.due_date.isnot(None),
+        Task.due_date > now ,
+        
+
+    ).order_by(Task.due_date.asc()).all() # orders by due_date in ascending form
+
+    return tasks
+
+
+def get_overdue_tasks(db: Session , user_id: int):
+
+    now = utc_now()
+
+    tasks = db.query(Task).filter(
+        Task.user_id == user_id,
+        Task.is_complete == False,
+        Task.due_date.isnot(None),
+        Task.due_date < now,
+    ).order_by(Task.due_date.asc()).all()
+
+    return tasks
