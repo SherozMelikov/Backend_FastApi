@@ -168,3 +168,69 @@ def get_overdue_tasks(db: Session , user_id: int):
     ).order_by(Task.due_date.asc()).all()
 
     return tasks
+
+def get_task_summary(db : Session, user_id : int , user_timezone : str):
+    try:
+        user_tz = ZoneInfo(user_timezone)
+    except Exception:
+        user_tz = timezone.utc
+
+    now_user_time = utc_now().astimezone(user_tz)
+
+    start_today_user_time = datetime.combine(
+        now_user_time.date(),
+        time.min,
+        tzinfo=user_tz
+    )
+   
+    now = utc_now() 
+    start_tomorrow_user_time = start_today_user_time + timedelta(days=1)
+
+    start_today_utc = start_today_user_time.astimezone(timezone.utc)
+    start_tomorrow_utc = start_tomorrow_user_time.astimezone(timezone.utc)
+
+    due_today_count = db.query(Task).filter(
+        Task.user_id == user_id,
+        Task.is_complete == False,
+        Task.due_date.isnot(None),
+        Task.due_date >= start_today_utc,
+        Task.due_date < start_tomorrow_utc
+    ).count()
+
+
+    upcoming_count = db.query(Task).filter(
+        Task.user_id == user_id,
+        Task.is_complete == False,
+        Task.due_date.isnot(None),
+        Task.due_date > now
+
+
+    ).count()
+
+    completed_count = db.query(Task).filter(
+        Task.user_id == user_id,
+        Task.is_complete == True
+    ).count()
+
+    overdue_count = db.query(Task).filter(
+        Task.user_id == user_id,
+        Task.is_complete == False,
+        Task.due_date.isnot(None),
+        Task.due_date < now
+    ).count()
+
+    high_impact_count = db.query(Task).filter(
+        Task.user_id == user_id,
+        Task.impact_level == "high"
+    ).count()
+
+    return {
+        "due_today": due_today_count,
+        "upcoming": upcoming_count,
+        "completed": completed_count,
+        "overdue": overdue_count,
+        "high_impact": high_impact_count
+    }
+
+
+

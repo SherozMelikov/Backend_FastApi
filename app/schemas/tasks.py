@@ -38,3 +38,11 @@ class TaskResponse(BaseModel):
     impact_level : TaskLevel
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TaskSummaryResponse(BaseModel):
+    due_today : int 
+    upcoming : int
+    completed : int
+    overdue : int
+    high_impact : int

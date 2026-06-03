@@ -14,7 +14,7 @@ from fastapi  import APIRouter  , Depends
 
 # Import Pydantic schemas  for request  validation  response formatting
 from  app.dependencies.auth  import get_current_user 
-from  app.schemas.tasks  import TaskCreate , TaskResponse , TaskUpdate
+from  app.schemas.tasks  import TaskCreate , TaskResponse, TaskSummaryResponse , TaskUpdate
 from app.services import task_services
 
 
@@ -75,6 +75,19 @@ def task_overdue(
     return task_services.get_overdue_tasks(
         db=db,
         user_id=current_user.id,
+
+    )
+
+@router.get("/summary",response_model=TaskSummaryResponse)
+def summary(
+    current_user : Annotated[User, Depends(get_current_user)],
+    db : Session = Depends (get_db)
+):
+    return task_services.get_task_summary(
+        db=db,
+        user_id=current_user.id,
+        user_timezone=current_user.timezone
+
 
     )
 
